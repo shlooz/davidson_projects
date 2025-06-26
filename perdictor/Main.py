@@ -145,30 +145,27 @@ class Main:
         plt.tight_layout()
         plt.show()
 
-    def showStructurePred(self, PDB_path, isFoundPropensities: bool=True):
+    def showStructurePred(self, isFoundPropensities: bool=True):
         # Visualize structure prediction for a single PDB file
         predictor = StructurePredictor()
-        structure = predictor.get_assignment_tuples(predictor.extract_sequence_from_pdb(PDB_path), isFoundPropensities)
+        structure = predictor.get_assignment_tuples(predictor.extract_sequence_from_pdb(self.pdb_path), isFoundPropensities)
         self.plot_amino_acid_structure(structure)
 
     def plot_amino_acid_structure(self, sequence):
         """
         Plot amino acid sequence colored by predicted structure.
-        H=red, E=blue, C=black, gaps=gray.
-        Adds residue index at start and end of each row.
+        H=red (helix), E=blue (beta sheet), C=black (coil), gaps=gray.
+        Residue indices shown at the start and end of each row.
         """
 
         color_map = {'H': 'red', 'E': 'blue', 'C': 'black', '-': 'gray'}
 
-
-
-        # Create dictionary from position to (amino acid, structure)
+        # Build dictionary from position to (aa, structure)
         seq_dict = {pos: (aa, ss) for aa, ss, pos in sequence}
-
         min_pos = min(seq_dict.keys())
         max_pos = max(seq_dict.keys())
 
-        # Fill full sequence including gaps
+        # Fill missing positions with gaps
         full_sequence = []
         for pos in range(min_pos, max_pos + 1):
             if pos in seq_dict:
@@ -177,53 +174,51 @@ class Main:
                 aa, ss = '-', '-'
             full_sequence.append((aa, ss, pos))
 
-        # Plotting
-        line_height = -1
+        # Layout
         chars_per_line = 20
+        line_height = -1
         total_lines = (len(full_sequence) + chars_per_line - 1) // chars_per_line
+        extra_top_lines = 3  # space for title + key
+        fig, ax = plt.subplots(figsize=(14, total_lines + extra_top_lines))
 
-        plt.figure(figsize=(14, total_lines + 3))
+        # Title (very top line)
+        ax.text(chars_per_line / 2 + 1, -1, "Amino Acid Sequence by Structure", fontsize=16,
+                ha='center', va='bottom')
 
+        # Structure key (just below title)
+        structure_labels = [("Helix", 'red'), ("Sheet", 'blue'), ("Coil", 'black'), ("Gap", 'gray')]
+        spacing = 6
+        start_x = (chars_per_line / 2 + 1) - spacing * (len(structure_labels) - 1) / 2
+        key_y = -2  # slightly below the title
 
+        for i, (label, color) in enumerate(structure_labels):
+            ax.text(start_x + i * spacing, key_y, label, fontsize=12,
+                    color=color, ha='center', va='bottom')
+
+        # Draw sequence
         for i, (aa, ss, pos) in enumerate(full_sequence):
             line = i // chars_per_line
-            x = (i % chars_per_line) + 2  # +2 to make room for index at start
-            y = line_height * line
+            x = (i % chars_per_line) + 2
+            y = line_height * (line + extra_top_lines)
             color = color_map.get(ss, 'gray')
-            plt.text(x, y, aa, fontsize=12, color=color, ha='center', va='center')
+            ax.text(x, y, aa, fontsize=12, color=color, ha='center', va='center')
 
-            # Write residue index at start of line
+            # Indices
             if i % chars_per_line == 0:
-                plt.text(0, y, str(pos), fontsize=10, color='dimgray', ha='right', va='center')
-
-            # Write residue index at end of line
+                ax.text(0, y, str(pos), fontsize=10, color='dimgray', ha='right', va='center')
             if (i + 1) % chars_per_line == 0 or (i + 1) == len(full_sequence):
-                plt.text(chars_per_line + 2.5, y, str(pos), fontsize=10, color='dimgray', ha='left', va='center')
+                ax.text(chars_per_line + 2.5, y, str(pos), fontsize=10, color='dimgray', ha='left', va='center')
 
-
-                        # Colored title (H/E/C in color)
-        plt.text(10, line_height * (total_lines + 1), "Amino Acid Sequence by Structure", fontsize=16, ha='center')
-        plt.text(5.5, line_height * (total_lines + 2), "(", fontsize=14)
-        plt.text(6.0, line_height * (total_lines + 2), "H", fontsize=14, color='red')
-        plt.text(6.3, line_height * (total_lines + 2), "=red,", fontsize=14)
-        plt.text(7.5, line_height * (total_lines + 2), "E", fontsize=14, color='blue')
-        plt.text(7.8, line_height * (total_lines + 2), "=blue,", fontsize=14)
-        plt.text(9.3, line_height * (total_lines + 2), "C", fontsize=14, color='black')
-        plt.text(9.6, line_height * (total_lines + 2), "=black,", fontsize=14)
-        plt.text(11.3, line_height * (total_lines + 2), "gaps=gray)", fontsize=14)
-
-        # Format plot
-        plt.xlim(-1, chars_per_line + 5)
-        plt.ylim(line_height * (total_lines + 3), 1)
-        plt.axis('off')
+        # Final formatting
+        ax.set_xlim(-1, chars_per_line + 5)
+        ax.set_ylim(line_height * (total_lines + extra_top_lines), 1)
+        ax.axis('off')
         plt.tight_layout()
         plt.show()
-        
-
 
 if __name__ == "__main__":
     pdb_path = r"C:\Users\eitha\programing\Waitzman\final_project\testFiles\1D4T.pdb"
     code = Main(pdb_path)
-    code.execute()
-    code.evaluate_all_files(True)
-    code.showStructurePred(pdb_path, True)
+    # code.execute()
+    # code.evaluate_all_files(True)
+    code.showStructurePred(True)
